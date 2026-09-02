@@ -1,0 +1,14 @@
+{
+  "name": "jianyaotai",
+  "version": "1.0.0",
+  "description": "鉴谣台 —— 家庭群谣言核查台，视觉读图 + 联网溯源 + 辟谣卡片，由 doubao-seed-evolving 驱动",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
