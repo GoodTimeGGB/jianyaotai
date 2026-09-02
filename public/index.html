@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B4D40">
+<title>鉴谣台 · 家庭群谣言核查台</title>
+<style>
+  :root{
+    --green-900:#083B31; --green-800:#0B4D40; --green-700:#0F6B5C; --green-600:#14806D;
+    --green-50:#E8F3F0;
+    --bg:#F4F3EE; --card:#FFFFFF;
+    --ink:#17211D; --ink-2:#54605B; --ink-3:#93A09A; --line:#E7E5DD;
+    --false:#C0392B;  --false-bg:#FBECEA;  --false-line:#F0C7C2;
+    --partial:#B0770B;--partial-bg:#FAF2DE; --partial-line:#ECD9A6;
+    --true:#15784C;   --true-bg:#E4F4EB;   --true-line:#B8E0CA;
+    --unknown:#66706B;--unknown-bg:#EFF1F0;--unknown-line:#D7DBD9;
+    --shadow-card:0 1px 2px rgba(15,60,50,.04),0 8px 28px rgba(15,60,50,.08);
+    --shadow-nav:0 -2px 20px rgba(15,60,50,.10);
+    --r-lg:22px; --r-md:16px; --r-sm:12px;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); font-size:16px; line-height:1.7;
+    padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  }
+  .view{ display:none; }
+  .view.active{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+
+  /* ===== 顶部品牌区 ===== */
+  .hero{
+    background:linear-gradient(155deg,#0F6B5C 0%,#0B4D40 55%,#083B31 100%);
+    color:#fff; padding:30px 22px 72px; position:relative; overflow:hidden;
+  }
+  .hero::before{
+    content:''; position:absolute; right:-70px; top:-80px; width:260px; height:260px;
+    background:radial-gradient(circle,rgba(255,255,255,.12),transparent 68%); border-radius:50%;
+  }
+  .hero::after{
+    content:''; position:absolute; left:-40px; bottom:-90px; width:200px; height:200px;
+    background:radial-gradient(circle,rgba(125,211,191,.18),transparent 70%); border-radius:50%;
+  }
+  .hero-top{ display:flex; align-items:center; gap:12px; position:relative; z-index:1; }
+  .logo{
+    width:46px; height:46px; border-radius:14px; background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.15);
+  }
+  .logo svg{ width:26px; height:26px; }
+  .hero-title{ font-size:25px; font-weight:800; letter-spacing:3px; }
+  .hero-sub{ font-size:12.5px; opacity:.72; letter-spacing:2px; margin-top:1px; }
+  .hero h2{ font-size:20px; font-weight:700; margin:22px 0 9px; line-height:1.5; position:relative; z-index:1; }
+  .hero p.lead{ font-size:14px; opacity:.85; line-height:1.8; position:relative; z-index:1; max-width:30em; }
+
+  /* ===== 卡片 ===== */
+  .card{
+    background:var(--card); border-radius:var(--r-lg); box-shadow:var(--shadow-card);
+    padding:22px 20px; margin:-50px 14px 16px; position:relative; z-index:2;
+  }
+  .card.plain{ margin:14px; box-shadow:0 1px 2px rgba(15,60,50,.03),0 4px 16px rgba(15,60,50,.05); }
+  .card-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-hd h3{ font-size:17px; font-weight:800; display:flex; align-items:center; gap:9px; }
+  .card-hd h3 .dot{ width:6px; height:19px; border-radius:3px; background:var(--green-700); }
+
+  /* 状态药丸 */
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+    padding:4px 11px; border-radius:20px;
+  }
+  .pill.ok{ background:var(--true-bg); color:var(--true); }
+  .pill.no{ background:var(--false-bg); color:var(--false); }
+  .pill .dot-i{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  /* ===== 输入切换 ===== */
+  .seg{ display:flex; background:var(--bg); border-radius:14px; padding:4px; gap:4px; margin-bottom:16px; }
+  .seg button{
+    flex:1; border:none; background:transparent; padding:12px 0; border-radius:11px;
+    font-size:15.5px; font-weight:700; color:var(--ink-2); cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; justify-content:center; gap:7px; transition:all .2s;
+  }
+  .seg button svg{ width:18px; height:18px; }
+  .seg button.on{ background:#fff; color:var(--green-700); box-shadow:0 2px 8px rgba(15,60,50,.10); }
+
+  textarea{
+    width:100%; min-height:140px; border:1.5px solid var(--line); border-radius:var(--r-md);
+    padding:15px 16px; font-size:16.5px; line-height:1.8; color:var(--ink); outline:none;
+    resize:vertical; font-family:inherit; background:#FCFBF8; transition:border-color .2s,background .2s;
+  }
+  textarea:focus{ border-color:var(--green-600); background:#fff; }
+  textarea::placeholder{ color:var(--ink-3); }
+
+  .upload{
+    border:2px dashed #BCD3CD; border-radius:var(--r-md); padding:32px 18px; text-align:center;
+    color:var(--ink-2); font-size:15px; cursor:pointer; background:var(--green-50); min-height:150px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; transition:all .2s;
+  }
+  .upload:active{ transform:scale(.99); }
+  .upload svg{ width:34px; height:34px; color:var(--green-700); }
+  .upload small{ font-size:12.5px; color:var(--ink-3); }
+  .upload img{ max-width:100%; max-height:230px; border-radius:var(--r-sm); box-shadow:0 2px 10px rgba(0,0,0,.1); }
+
+  /* 预扫提示 */
+  .prescan{
+    display:none; background:var(--partial-bg); border:1px solid var(--partial-line);
+    border-radius:var(--r-md); padding:13px 15px; margin:14px 0 2px; font-size:14px;
+    color:#6E4E08; line-height:1.7;
+  }
+  .prescan b{ color:var(--partial); }
+  .prescan .ps-tag{ display:inline-flex; align-items:center; gap:5px; font-weight:800; }
+  .prescan small{ display:block; color:#A8843C; margin-top:4px; font-size:12.5px; }
+
+  /* 按钮 */
+  .btn{
+    width:100%; min-height:54px; border:none; border-radius:var(--r-md); cursor:pointer;
+    font-size:17px; font-weight:800; font-family:inherit; margin-top:16px; letter-spacing:.5px;
+    display:flex; align-items:center; justify-content:center; gap:9px; transition:transform .12s,filter .2s;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:linear-gradient(135deg,#14806D,#0B4D40); color:#fff; box-shadow:0 6px 18px rgba(11,77,64,.30); }
+  .btn-primary:disabled{ filter:grayscale(.5) opacity(.7); cursor:wait; }
+  .btn-ghost{ background:#fff; color:var(--green-700); border:1.5px solid #C4DCD5; box-shadow:none; }
+  .btn-green{ background:var(--true); color:#fff; box-shadow:0 5px 15px rgba(21,120,76,.25); }
+  .btn svg{ width:20px; height:20px; }
+  .hint{ font-size:12.5px; color:var(--ink-3); margin-top:12px; line-height:1.7; text-align:center; display:flex; align-items:flex-start; justify-content:center; gap:5px; }
+  .hint svg{ width:14px; height:14px; flex-shrink:0; margin-top:3px; }
+
+  /* 未配置提示条 */
+  .setup-note{
+    display:none; background:var(--green-50); border:1px solid #C4DDD6; border-radius:var(--r-md);
+    padding:13px 15px; margin-bottom:14px; font-size:13.5px; color:var(--green-800); line-height:1.6;
+  }
+  .setup-note b{ text-decoration:underline; cursor:pointer; }
+
+  /* loading */
+  .loading{ text-align:center; padding:42px 14px; color:var(--green-700); }
+  .spin{ width:40px; height:40px; border:3.5px solid var(--green-50); border-top-color:var(--green-700); border-radius:50%; margin:0 auto 16px; animation:sp .9s linear infinite; }
+  @keyframes sp{ to{ transform:rotate(360deg);} }
+  .loading p{ font-size:15.5px; font-weight:700; }
+  .loading small{ display:block; color:var(--ink-3); font-size:12.5px; margin-top:8px; line-height:1.7; }
+
+  /* ===== 判定结果 ===== */
+  .verdict-hero{ border-radius:var(--r-md); padding:22px 18px; margin-bottom:18px; text-align:center; }
+  .verdict-hero.失实{ background:var(--false-bg); border:1.5px solid var(--false-line); }
+  .verdict-hero.部分属实{ background:var(--partial-bg); border:1.5px solid var(--partial-line); }
+  .verdict-hero.属实{ background:var(--true-bg); border:1.5px solid var(--true-line); }
+  .verdict-hero.无法核实{ background:var(--unknown-bg); border:1.5px solid var(--unknown-line); }
+  .vh-icon{ width:48px; height:48px; margin:0 auto 8px; }
+  .vh-word{ font-size:27px; font-weight:900; letter-spacing:3px; }
+  .verdict-hero.失实 .vh-word{ color:var(--false); }
+  .verdict-hero.部分属实 .vh-word{ color:var(--partial); }
+  .verdict-hero.属实 .vh-word{ color:var(--true); }
+  .verdict-hero.无法核实 .vh-word{ color:var(--unknown); }
+  .vh-tip{ font-size:14px; color:var(--ink-2); margin-top:4px; font-weight:600; }
+
+  .stat{ display:flex; gap:8px; margin-bottom:22px; }
+  .stat div{ flex:1; text-align:center; border-radius:var(--r-sm); padding:12px 0; }
+  .stat b{ display:block; font-size:23px; font-weight:900; line-height:1.2; }
+  .stat span{ font-size:12px; color:var(--ink-2); font-weight:600; }
+  .stat .s-失实{ background:var(--false-bg); } .stat .s-失实 b{ color:var(--false); }
+  .stat .s-部分属实{ background:var(--partial-bg); } .stat .s-部分属实 b{ color:var(--partial); }
+  .stat .s-属实{ background:var(--true-bg); } .stat .s-属实 b{ color:var(--true); }
+  .stat .s-无法核实{ background:var(--unknown-bg); } .stat .s-无法核实 b{ color:var(--unknown); }
+
+  .claim{ border-radius:var(--r-md); padding:16px; margin-bottom:14px; border:1px solid var(--line); background:#FCFBF8; border-left-width:5px; }
+  .claim.失实{ border-left-color:var(--false); }
+  .claim.部分属实{ border-left-color:var(--partial); }
+  .claim.属实{ border-left-color:var(--true); }
+  .claim.无法核实{ border-left-color:var(--unknown); }
+  .claim-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:9px; }
+  .v-tag{ display:inline-flex; align-items:center; gap:5px; font-size:13.5px; font-weight:800; padding:5px 13px; border-radius:20px; color:#fff; }
+  .v-tag.失实{ background:var(--false); } .v-tag.部分属实{ background:var(--partial); }
+  .v-tag.属实{ background:var(--true); } .v-tag.无法核实{ background:var(--unknown); }
+  .conf{ font-size:12.5px; color:var(--ink-3); font-weight:600; }
+  .claim-txt{ font-size:16px; font-weight:700; line-height:1.65; margin-bottom:8px; }
+  .explain{ font-size:14.5px; color:#3F4A45; line-height:1.85; }
+  .src-list{ margin-top:12px; padding-top:11px; border-top:1px dashed var(--line); }
+  .src-label{ font-size:12.5px; color:var(--ink-3); font-weight:700; margin-bottom:6px; }
+  .src{ display:flex; align-items:flex-start; gap:7px; font-size:13.5px; color:var(--green-700); text-decoration:none; margin-top:6px; line-height:1.6; word-break:break-all; font-weight:600; }
+  .src svg{ width:15px; height:15px; flex-shrink:0; margin-top:3px; }
+  .src-pub{ color:var(--ink-3); font-weight:400; }
+
+  .elder{ background:linear-gradient(165deg,#FFFBEE,#FFF3D6); border:1.5px solid #EDD99E; border-radius:var(--r-md); padding:24px 20px; margin-top:6px; text-align:center; }
+  .elder .eh{ font-size:23px; font-weight:900; color:#7A4E00; line-height:1.45; }
+  .elder .eb{ font-size:15.5px; color:#5C4A1F; line-height:1.9; margin-top:14px; text-align:left; }
+  .elder .ea{ font-size:15.5px; font-weight:800; color:#9A5B00; margin-top:16px; padding:12px 14px; background:rgba(255,255,255,.7); border-radius:11px; border:1px dashed #E3C98A; }
+  .elder .efoot{ font-size:12px; color:#B09360; margin-top:14px; }
+
+  .notes{ background:#F3F5F4; border-radius:var(--r-sm); padding:14px 15px; font-size:13.5px; color:#54605B; line-height:1.8; margin-top:16px; border-left:4px solid var(--ink-3); }
+  .notes b{ color:var(--ink-2); }
+  .err{ background:var(--false-bg); color:var(--false); border:1px solid var(--false-line); padding:16px; border-radius:var(--r-md); font-size:14.5px; line-height:1.7; font-weight:600; }
+  .fallback{ font-size:14.5px; line-height:1.85; color:#3F4A45; white-space:pre-wrap; }
+
+  /* 历史 */
+  .hist-item{ background:#FCFBF8; border:1px solid var(--line); border-radius:var(--r-sm); padding:14px 15px; margin-bottom:10px; font-size:14px; }
+  .hist-item.clickable{ cursor:pointer; transition:border-color .18s, background .18s; }
+  .hist-item.clickable:active{ transform:scale(.99); }
+  .hist-item.clickable:hover{ border-color:var(--green-600); background:#fff; }
+  .hist-item .h-row{ display:flex; align-items:center; gap:9px; }
+  .hist-item .h-t{ font-weight:700; line-height:1.5; flex:1; }
+  .h-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .h-dot.失实{ background:var(--false); }
+  .h-dot.部分属实{ background:var(--partial); }
+  .h-dot.属实{ background:var(--true); }
+  .h-dot.无法核实{ background:var(--unknown); }
+  .h-chev{ width:17px; height:17px; color:var(--ink-3); flex-shrink:0; }
+  .hist-item .h-m{ color:var(--ink-3); font-size:12.5px; margin-top:6px; line-height:1.6; }
+  .hist-item .h-open{ font-size:12px; color:var(--green-700); font-weight:700; margin-top:8px; }
+  .hist-empty{ text-align:center; color:var(--ink-3); font-size:13.5px; padding:18px 0; }
+  .hist-actions{ display:inline-flex; gap:8px; }
+  .mini-btn{
+    display:inline-flex; align-items:center; gap:5px; border:1.5px solid var(--line);
+    background:#fff; color:var(--green-700); font-size:12.5px; font-weight:700; font-family:inherit;
+    padding:7px 12px; border-radius:10px; cursor:pointer; transition:all .15s;
+  }
+  .mini-btn svg{ width:14px; height:14px; }
+  .mini-btn:active{ transform:scale(.96); }
+  .mini-btn:hover{ border-color:var(--green-600); background:var(--green-50); }
+  .hist-note{
+    display:flex; align-items:flex-start; gap:7px; margin-top:14px; padding-top:13px;
+    border-top:1px dashed var(--line); font-size:12px; color:var(--ink-3); line-height:1.7;
+  }
+  .hist-note svg{ width:15px; height:15px; flex-shrink:0; margin-top:2px; }
+
+  /* ===== 设置页 ===== */
+  .form-group{ margin-bottom:18px; }
+  .form-group label{ display:block; font-size:14px; font-weight:700; margin-bottom:7px; color:var(--ink-2); }
+  .form-group label .req{ color:var(--false); margin-left:2px; }
+  .form-group .fg-hint{ font-size:12px; color:var(--ink-3); margin-top:6px; line-height:1.6; }
+  .input{
+    width:100%; border:1.5px solid var(--line); border-radius:var(--r-sm); padding:13px 14px;
+    font-size:15px; font-family:inherit; background:#FCFBF8; outline:none; transition:border-color .2s; color:var(--ink);
+  }
+  .input:focus{ border-color:var(--green-600); background:#fff; }
+  .input.mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; }
+  .preset-row{ display:flex; gap:8px; margin-bottom:16px; }
+  .provider-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .provider{
+    border:1.5px solid var(--line); background:#FCFBF8; border-radius:12px;
+    padding:12px 4px; font-size:13px; font-weight:700; color:var(--ink-2); cursor:pointer;
+    font-family:inherit; line-height:1.4; transition:all .15s;
+  }
+  .provider:active{ transform:scale(.96); }
+  .provider.on{ border-color:var(--green-600); background:var(--green-50); color:var(--green-800); box-shadow:0 2px 8px rgba(15,107,92,.12); }
+
+  .test-result{ display:none; border-radius:var(--r-sm); padding:12px 14px; font-size:13.5px; line-height:1.7; margin-top:12px; font-weight:600; }
+  .test-result.ok{ display:block; background:var(--true-bg); color:var(--true); border:1px solid var(--true-line); }
+  .test-result.fail{ display:block; background:var(--false-bg); color:var(--false); border:1px solid var(--false-line); word-break:break-all; }
+  .test-result.wait{ display:block; background:var(--unknown-bg); color:var(--ink-2); border:1px solid var(--unknown-line); }
+
+  .settings-section{ margin-top:8px; }
+  .settings-section h4{ font-size:13px; font-weight:800; color:var(--ink-3); letter-spacing:1px; margin:6px 2px 12px; }
+  .info-box{ background:var(--green-50); border:1px solid #C8E0D9; border-radius:var(--r-sm); padding:14px 15px; font-size:13px; color:var(--green-800); line-height:1.8; }
+  .info-box a{ color:var(--green-700); font-weight:700; }
+
+  /* ===== 底部导航 ===== */
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-top:1px solid rgba(15,60,50,.08); box-shadow:var(--shadow-nav);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar-inner{ max-width:560px; margin:0 auto; display:flex; }
+  .tabbar button{
+    flex:1; border:none; background:none; padding:9px 0 10px; cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--ink-3);
+    font-size:11.5px; font-weight:700; transition:color .2s;
+  }
+  .tabbar button svg{ width:24px; height:24px; }
+  .tabbar button.on{ color:var(--green-700); }
+
+  /* 通用居中弹窗（未配置提示等） */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:120; background:rgba(10,30,26,.55);
+    backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+    display:flex; align-items:center; justify-content:center; padding:24px 28px;
+    opacity:0; visibility:hidden; transition:opacity .22s ease, visibility .22s;
+  }
+  .modal-overlay.show{ opacity:1; visibility:visible; }
+  .modal-panel{
+    position:relative; width:100%; max-width:340px; background:#fff; border-radius:22px;
+    padding:30px 26px 24px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.35);
+    transform:translateY(16px) scale(.96); transition:transform .25s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .modal-overlay.show .modal-panel{ transform:none; }
+  .modal-close{
+    position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%;
+    border:none; background:var(--bg); color:var(--ink-2); cursor:pointer; display:flex;
+    align-items:center; justify-content:center;
+  }
+  .modal-close svg{ width:18px; height:18px; }
+  .modal-close:active{ transform:scale(.92); }
+
+  /* 未配置提示内容 */
+  .setup-icon{
+    width:60px; height:60px; border-radius:18px; background:var(--green-50);
+    color:var(--green-700); display:flex; align-items:center; justify-content:center;
+    margin:0 auto 14px;
+  }
+  .setup-icon svg{ width:32px; height:32px; }
+  .setup-title{ font-size:18px; font-weight:800; margin-bottom:8px; }
+  .setup-desc{ font-size:13.5px; color:var(--ink-2); line-height:1.8; margin-bottom:6px; }
+  .modal-panel .btn{ margin-top:18px; min-height:50px; font-size:16px; }
+
+  /* ===== 辟谣卡遮罩 ===== */
+  .card-overlay{
+    position:fixed; inset:0; z-index:100; background:rgba(10,30,26,.78);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center; padding:24px 18px;
+    opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s;
+    overflow-y:auto;
+  }
+  .card-overlay.show{ opacity:1; visibility:visible; }
+  .co-panel{
+    position:relative; width:100%; max-width:420px; background:transparent;
+    display:flex; flex-direction:column; align-items:center;
+    transform:translateY(14px) scale(.97); transition:transform .25s ease; margin:auto;
+  }
+  .card-overlay.show .co-panel{ transform:none; }
+  .co-panel img{ width:100%; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.45); background:#fff; }
+  .co-close{
+    position:absolute; top:-16px; right:-8px; width:38px; height:38px; border-radius:50%;
+    border:none; background:#fff; color:#333; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.3); z-index:2;
+  }
+  .co-close svg{ width:20px; height:20px; }
+  .co-tip{ color:rgba(255,255,255,.85); font-size:13px; margin-top:16px; text-align:center; }
+  .co-download{
+    margin-top:12px; background:var(--true); color:#fff; text-decoration:none;
+    padding:13px 26px; border-radius:14px; font-size:16px; font-weight:800;
+    display:inline-flex; align-items:center; gap:8px; box-shadow:0 6px 18px rgba(21,120,76,.4);
+  }
+  .co-download svg{ width:19px; height:19px; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+  /* 页内 toast */
+  .toast{
+    position:fixed; left:50%; top:24px; transform:translate(-50%,-16px);
+    background:rgba(23,33,29,.94); color:#fff; font-size:14px; font-weight:600;
+    padding:12px 22px; border-radius:30px; z-index:200; max-width:88%;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; text-align:center; line-height:1.5;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+  .toast.err{ background:rgba(192,57,43,.95); }
+</style>
+</head>
+<body>
+
+<!-- ============ 核查视图 ============ -->
+<div class="view active" id="view-check">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hero-title">鉴谣台</div>
+        <div class="hero-sub">家庭群谣言核查台</div>
+      </div>
+    </div>
+    <h2>爸妈群里转的养生消息，先别急着信</h2>
+    <p class="lead">把截图或文字丢进来，AI 读图、核查权威来源、给出判定，再生成一张能直接转回群里的辟谣卡。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <h3><span class="dot"></span>开始核查</h3>
+      <span class="pill no" id="cfgPill"><span class="dot-i"></span>未配置</span>
+    </div>
+
+    <div class="setup-note" id="setupNote">
+      还没配置模型。点底部「设置」填入你的火山方舟 Key（Agent Plan 或按量付费均可），<b onclick="goSettings()">去配置 →</b>
+    </div>
+
+    <div class="seg">
+      <button class="on" id="tabText" onclick="switchTab('text')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        粘贴文字
+      </button>
+      <button id="tabImg" onclick="switchTab('img')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        上传截图
+      </button>
+    </div>
+
+    <div id="paneText">
+      <textarea id="text" aria-label="待核查文字" placeholder="把家庭群里转发的那段话粘进来，例如：&#10;&#10;「紧急通知！吃过夜食物会致癌，家家都有，赶紧扔！」"></textarea>
+    </div>
+    <div id="paneImg" style="display:none;">
+      <div class="upload" role="button" tabindex="0" onclick="document.getElementById('file').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        <span>点这里选择家庭群截图</span>
+        <small>支持 JPG / PNG，图片只在本次核查中使用</small>
+        <img id="preview" style="display:none;" alt="截图预览">
+      </div>
+      <input type="file" id="file" accept="image/*" style="display:none;" onchange="onPick(event)">
+      <textarea id="imgText" aria-label="补充说明" placeholder="（可选）补充一句话，比如：这是我妈今天刚转的" style="min-height:66px;margin-top:12px;"></textarea>
+    </div>
+
+    <div class="prescan" id="prescan" role="status"></div>
+
+    <button class="btn btn-primary" id="goBtn" onclick="verify()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <span id="goBtnText">开始核查</span>
+    </button>
+    <p class="hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      深度核查约需 1–5 分钟，请耐心等待。判定仅供参考，健康问题请以医生为准。
+    </p>
+  </div>
+
+  <div id="result"></div>
+
+  <div class="card plain" id="histCard">
+    <div class="card-hd">
+      <h3><span class="dot"></span>本台核查记录</h3>
+      <span class="hist-actions">
+        <button class="mini-btn" id="expBtn" onclick="exportHist()" title="导出记录为 JSON 文件">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          导出
+        </button>
+        <button class="mini-btn" id="impBtn" onclick="document.getElementById('impFile').click()" title="从 JSON 文件导入记录">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+          导入
+        </button>
+        <input type="file" id="impFile" accept="application/json,.json" style="display:none;" onchange="importHist(event)">
+      </span>
+    </div>
+    <div id="hist"></div>
+    <p class="hist-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      记录仅保存在本机浏览器（localStorage），不上传服务器；清除浏览器数据会丢失，可点「导出」备份。
+    </p>
+  </div>
+</div>
+
+<!-- ============ 设置视图 ============ -->
+<div class="view" id="view-settings">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>
+      </div>
+      <div>
+        <div class="hero-title" style="font-size:21px;letter-spacing:1px;">模型设置</div>
+        <div class="hero-sub">火山方舟 · doubao-seed-evolving</div>
+      </div>
+    </div>
+    <h2>配置一次，核查全程可用</h2>
+    <p class="lead">Key 只保存在你这台设备的浏览器里，请求经本机服务端转发，不会经过任何第三方。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h3><span class="dot"></span>选择模型厂商</h3></div>
+    <div class="provider-grid" id="providerGrid"></div>
+
+    <div class="form-group" style="margin-top:18px;">
+      <label>API Key<span class="req">*</span></label>
+      <input class="input mono" id="cfgKey" type="password" placeholder="sk-... / ark-..." autocomplete="off">
+      <div class="fg-hint">Key 仅存本机浏览器；各厂商 Key 不通用。</div>
+    </div>
+
+    <div class="form-group">
+      <label>接口地址 Base URL</label>
+      <input class="input mono" id="cfgBase" placeholder="https://...">
+    </div>
+
+    <div class="form-group">
+      <label>模型 Model</label>
+      <input class="input mono" id="cfgModel" placeholder="模型名称">
+    </div>
+
+    <button class="btn btn-ghost" onclick="testConnection()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      测试连接
+    </button>
+    <div class="test-result" id="testResult"></div>
+
+    <button class="btn btn-primary" onclick="saveConfig()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      保存配置
+    </button>
+  </div>
+
+  <div class="card plain settings-section">
+    <h4>说明</h4>
+    <div class="info-box">
+      · <b>火山方舟 Agent Plan</b>：订阅套餐，Responses 协议，支持视觉与工具调用，按套餐计费。<br>
+      · <b>火山方舟按量付费</b>：标准 API，Responses 协议，模型支持时可联网检索。<br>
+      · <b>OpenAI / DeepSeek / Kimi / 智谱</b>：标准 Chat Completions 协议（OpenAI 兼容），截图核查需该模型支持图片输入；不支持 web_search，模型会基于自身知识核查并在「自查」中如实说明。<br>
+      · 也可选择「自定义」，填写任何 OpenAI 兼容服务的 Base URL 与模型名。<br>
+      · Key 仅存本机浏览器 localStorage，清除浏览器数据即清除；服务端也支持用环境变量 <code>ARK_API_KEY</code> 统一配置。
+    </div>
+  </div>
+</div>
+
+<!-- ============ 底部导航 ============ -->
+<nav class="tabbar">
+  <div class="tabbar-inner">
+    <button class="on" id="navCheck" onclick="goCheck()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 9-4-1.1-7-4.4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      核查
+    </button>
+    <button id="navSettings" onclick="goSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>
+      设置
+    </button>
+  </div>
+</nav>
+
+<script>
+/* ================= 配置管理 ================= */
+const CFG_KEY = 'jyt_config';
+const PLAN_BASE = 'https://ark.cn-beijing.volces.com/api/plan/v3';
+const DEFAULT_MODEL = 'doubao-seed-evolving';
+
+// 厂商预设：mode = responses（方舟专有）| chat（OpenAI 兼容）
+const PROVIDERS = [
+  { id:'ark-plan', name:'方舟 Agent Plan', mode:'responses', base:'https://ark.cn-beijing.volces.com/api/plan/v3', model:'doubao-seed-evolving' },
+  { id:'ark-payg',  name:'方舟 · 按量付费', mode:'responses', base:'https://ark.cn-beijing.volces.com/api/v3', model:'doubao-seed-evolving' },
+  { id:'openai',    name:'OpenAI',        mode:'chat', base:'https://api.openai.com/v1', model:'gpt-4o' },
+  { id:'deepseek',  name:'DeepSeek',      mode:'chat', base:'https://api.deepseek.com/v1', model:'deepseek-chat' },
+  { id:'moonshot',  name:'Kimi（月之暗面）', mode:'chat', base:'https://api.moonshot.cn/v1', model:'moonshot-v1-32k' },
+  { id:'zhipu',     name:'智谱 GLM',       mode:'chat', base:'https://open.bigmodel.cn/api/paas/v4', model:'glm-4-flash' },
+  { id:'custom',    name:'自定义',         mode:'chat', base:'', model:'' }
+];
+let curProvider = 'ark-plan';
+
+// 存储结构：{ activeProvider, [厂商id]: { apiKey, baseUrl, model, mode }  }
+// 每个厂商独立保存，切换时各自回填，互不覆盖。
+function loadCfg(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(CFG_KEY));
+    if(!raw) return { activeProvider:'ark-plan' };
+    // 迁移旧格式（单配置 { provider, apiKey, ... }）→ 按厂商分桶
+    if(raw.provider !== undefined){
+      const np = raw.provider || 'ark-plan';
+      const migrated = { activeProvider: np, [np]: { apiKey: raw.apiKey||'', baseUrl: raw.baseUrl||'', model: raw.model||'', mode: raw.mode||'' } };
+      localStorage.setItem(CFG_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    if(!raw.activeProvider) raw.activeProvider = 'ark-plan';
+    return raw;
+  }catch{ return { activeProvider:'ark-plan' }; }
+}
+function saveCfgObj(top){ localStorage.setItem(CFG_KEY, JSON.stringify(top)); }
+// 返回当前生效厂商（最近一次保存）的运行参数，供核查请求使用
+function getCallCfg(){
+  const c = loadCfg();
+  const provId = c.activeProvider || 'ark-plan';
+  const prov = PROVIDERS.find(p => p.id === provId) || PROVIDERS[0];
+  const p = c[provId] || {};
+  return {
+    apiKey: (p.apiKey||'').trim(),
+    baseUrl: (p.baseUrl||prov.base||PLAN_BASE).trim(),
+    model: (p.model||prov.model||DEFAULT_MODEL).trim(),
+    mode: p.mode || prov.mode
+  };
+}
+
+function refreshCfgPill(){
+  const c = getCallCfg();
+  const pill = document.getElementById('cfgPill');
+  const note = document.getElementById('setupNote');
+  if(c.apiKey){
+    pill.className = 'pill ok';
+    pill.innerHTML = '<span class="dot-i"></span>' + esc(c.model || DEFAULT_MODEL);
+    note.style.display = 'none';
+  }else{
+    pill.className = 'pill no';
+    pill.innerHTML = '<span class="dot-i"></span>未配置';
+    note.style.display = 'block';
+  }
+}
+
+function renderProviderGrid(){
+  const box = document.getElementById('providerGrid');
+  box.innerHTML = PROVIDERS.map(p =>
+    `<button class="provider${p.id===curProvider?' on':''}" onclick="selectProvider('${p.id}')">${esc(p.name)}</button>`
+  ).join('');
+}
+function selectProvider(id){
+  curProvider = id;
+  renderProviderGrid();
+  const c = loadCfg();
+  const saved = c[id] || {};
+  const prov = PROVIDERS.find(x => x.id === id);
+  // 该厂商有已保存值则回填（含 Key），否则填默认值
+  document.getElementById('cfgKey').value = saved.apiKey || '';
+  document.getElementById('cfgBase').value = saved.baseUrl || (prov && prov.base) || '';
+  document.getElementById('cfgModel').value = saved.model || (prov && prov.model) || DEFAULT_MODEL;
+}
+
+function fillSettingsFromStorage(){
+  const c = loadCfg();
+  const provId = c.activeProvider || 'ark-plan';
+  // 缓存里的厂商 id 不是预设厂商 → 归为自定义
+  curProvider = PROVIDERS.some(p => p.id === provId) ? provId : 'custom';
+  renderProviderGrid();
+  selectProvider(curProvider);
+}
+
+async function testConnection(){
+  const apiKey = document.getElementById('cfgKey').value.trim();
+  const baseUrl = document.getElementById('cfgBase').value.trim();
+  const model = document.getElementById('cfgModel').value.trim() || DEFAULT_MODEL;
+  const prov = PROVIDERS.find(p => p.id === curProvider) || PROVIDERS[0];
+  const mode = prov.mode;
+  const box = document.getElementById('testResult');
+  if(!apiKey){ box.className='test-result fail'; box.textContent='请先填写 API Key'; return; }
+  if(!baseUrl){ box.className='test-result fail'; box.textContent='请先填写接口地址 Base URL'; return; }
+  box.className='test-result wait'; box.textContent='正在测试连接…';
+  try{
+    const r = await fetch('/api/test',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ apiKey, baseUrl, model, mode })});
+    const d = await r.json();
+    if(d.ok){
+      box.className='test-result ok';
+      box.innerHTML = `连接成功！模型 <b>${esc(d.modelReturned)}</b> 正常响应（${d.mode==='chat'?'Chat Completions':'Responses'} 协议，耗时 ${d.ms} ms）。`;
+    }else{
+      box.className='test-result fail';
+      box.textContent = '连接失败：' + (d.error || '未知错误');
+    }
+  }catch(e){ box.className='test-result fail'; box.textContent='请求失败：'+e.message; }
+}
+
+function saveConfig(){
+  const apiKey = document.getElementById('cfgKey').value.trim();
+  const baseUrl = document.getElementById('cfgBase').value.trim();
+  const model = document.getElementById('cfgModel').value.trim();
+  const prov = PROVIDERS.find(p => p.id === curProvider) || PROVIDERS[0];
+  if(!apiKey){ toast('请先填写 API Key', 'err'); return; }
+  if(!baseUrl){ toast('请先填写接口地址', 'err'); return; }
+
+  // 整体结构：{ activeProvider, [厂商id]: { apiKey, baseUrl, model, mode }, ... }
+  const top = loadCfg();
+  top.activeProvider = curProvider;
+  top[curProvider] = {
+    apiKey,
+    baseUrl,
+    model: model || prov.model || DEFAULT_MODEL,
+    mode: prov.mode
+  };
+  saveCfgObj(top);
+  refreshCfgPill();
+  closeNeedSetup();
+  goCheck();
+  toast('配置已保存，可以开始核查了');
+}
+
+/* ================= 视图切换 ================= */
+function goCheck(){
+  document.getElementById('view-check').classList.add('active');
+  document.getElementById('view-settings').classList.remove('active');
+  document.getElementById('navCheck').classList.add('on');
+  document.getElementById('navSettings').classList.remove('on');
+  window.scrollTo(0,0);
+}
+function goSettings(){
+  fillSettingsFromStorage();
+  document.getElementById('view-settings').classList.add('active');
+  document.getElementById('view-check').classList.remove('active');
+  document.getElementById('navSettings').classList.add('on');
+  document.getElementById('navCheck').classList.remove('on');
+  window.scrollTo(0,0);
+}
+
+/* ================= 核查逻辑 ================= */
+let curTab = 'text';
+let imageData = null;
+
+function switchTab(t){
+  curTab = t;
+  tabText.className = t==='text'?'on':'';
+  tabImg.className  = t==='img'?'on':'';
+  paneText.style.display = t==='text'?'block':'none';
+  paneImg.style.display  = t==='img'?'block':'none';
+}
+
+function onPick(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageData = ev.target.result;
+    const p = document.getElementById('preview');
+    p.src = imageData; p.style.display = 'block';
+  };
+  reader.readAsDataURL(f);
+}
+
+let prescanTimer = null;
+function schedulePrescan(){
+  clearTimeout(prescanTimer);
+  prescanTimer = setTimeout(async () => {
+    const text = document.getElementById('text').value.trim();
+    const box = document.getElementById('prescan');
+    if(text.length < 6){ box.style.display='none'; return; }
+    try{
+      const r = await (await fetch('/api/prescan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})})).json();
+      if(r.ok && (r.hits.length || r.signals.length)){
+        box.style.display='block';
+        box.innerHTML =
+          `<span class="ps-tag">⚡ 本地快速扫描</span> 命中 <b>${r.hits.length}</b> 条已知谣言模式` +
+          (r.signals.length ? `，识别话术信号 <b>${r.signals.length}</b> 处（${r.signals.slice(0,2).map(esc).join('、')}）` : '') +
+          `<small>点下方按钮，让模型深度核查并给出权威来源</small>`;
+      } else { box.style.display='none'; }
+    }catch{ box.style.display='none'; }
+  }, 450);
+}
+document.getElementById('text').addEventListener('input', schedulePrescan);
+
+function getBody(){
+  const text = curTab==='text' ? document.getElementById('text').value.trim() : document.getElementById('imgText').value.trim();
+  const body = { ...getCallCfg() };
+  if(curTab==='text'){ if(!text){ toast('先粘贴要核查的内容', 'err'); return null; } body.text = text; }
+  else { if(!imageData){ toast('先选择家庭群截图', 'err'); return null; } body.image = imageData; body.text = text; }
+  return { body, text };
+}
+
+function setLoading(kind){
+  const msg = kind === 'img'
+    ? { p: '正在识别截图内容…', s: '模型先读图，把图里的养生说法逐条拆出来，再逐条核查，请稍候' }
+    : kind === 'imgtext'
+    ? { p: '正在结合补充说明识别截图…', s: '模型一边读截图、一边参考你的说明，拆出说法后逐条核查，请稍候' }
+    : { p: '正在核查这段文字…', s: '模型正在拆解说法、逐条查证来源，请稍候' };
+  document.getElementById('goBtn').disabled = true;
+  document.getElementById('goBtnText').textContent = '正在核查…';
+  document.getElementById('result').innerHTML =
+    `<div class="card"><div class="loading"><div class="spin"></div>
+     <p>${msg.p}</p><small>${msg.s}</small></div></div>`;
+  window.scrollTo({ top: document.getElementById('result').offsetTop - 20, behavior:'smooth' });
+}
+function resetBtn(){
+  document.getElementById('goBtn').disabled = false;
+  document.getElementById('goBtnText').textContent = '开始核查';
+}
+
+function showNeedSetup(){
+  let ov = document.getElementById('setupOverlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'setupOverlay';
+    ov.className = 'modal-overlay';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if(e.target === ov || e.target.closest('[data-close]')) closeNeedSetup(); });
+  }
+  ov.innerHTML = `
+    <div class="modal-panel">
+      <button class="modal-close" data-close aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="setup-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>
+      </div>
+      <div class="setup-title">还没配置模型</div>
+      <div class="setup-desc">填入火山方舟 API Key（Agent Plan 或按量付费均可），保存后即可开始核查。Key 只存在本机浏览器里。</div>
+      <button class="btn btn-primary" onclick="closeNeedSetup(); goSettings();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        去配置模型
+      </button>
+    </div>`;
+  requestAnimationFrame(() => ov.classList.add('show'));
+  refreshCfgPill();
+}
+function closeNeedSetup(){
+  const ov = document.getElementById('setupOverlay');
+  if(ov) ov.classList.remove('show');
+}
+
+/* 页内 toast（替代原生 alert，避免内嵌 webview 接管弹窗导致崩溃） */
+let toastTimer = null;
+function toast(msg, type){
+  let el = document.getElementById('jytToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'jytToast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.className = 'toast show' + (type === 'err' ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+async function verify(){
+  // 先查 Key，再查输入，任何缺失都走页内提示，不用原生 alert
+  if(!getCallCfg().apiKey){ showNeedSetup(); return; }
+  const g = getBody(); if(!g) return;
+  const { body, text } = g;
+  const kind = curTab==='img' ? (text ? 'imgtext' : 'img') : 'text';
+  setLoading(kind);
+  const out = document.getElementById('result');
+  try{
+    const resp = await fetch('/api/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await resp.json();
+    if(!data.ok){
+      if((data.error||'').includes('Key') || (data.error||'').includes('设置')){ showNeedSetup(); return; }
+      throw new Error(data.error || '核查失败');
+    }
+    if(data.fallback){
+      out.innerHTML = `<div class="card"><div class="card-hd"><h3><span class="dot"></span>模型回复</h3></div><div class="fallback">${esc(data.text)}</div>${usageHtml(data)}</div>`;
+      return;
+    }
+    renderReport(data);
+    saveHist(data, text || (curTab==='img' ? '截图核查' : ''));
+  }catch(err){
+    out.innerHTML = `<div class="card"><div class="err">出错了：${esc(err.message)}</div></div>`;
+  }finally{
+    resetBtn();
+  }
+}
+
+/* ================= 结果渲染 ================= */
+const ICON = {
+  '失实':'<svg class="vh-icon" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+  '部分属实':'<svg class="vh-icon" viewBox="0 0 24 24" fill="none" stroke="#B0770B" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 16.5v.5"/></svg>',
+  '属实':'<svg class="vh-icon" viewBox="0 0 24 24" fill="none" stroke="#15784C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg>',
+  '无法核实':'<svg class="vh-icon" viewBox="0 0 24 24" fill="none" stroke="#66706B" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 9.5a2.5 2.5 0 014.5 1.5c0 1.5-2 2-2 3.5"/><path d="M12 17v.5"/></svg>'
+};
+const VLABEL = { '失实':'失实 · 别转了', '部分属实':'部分属实 · 别全信', '属实':'属实 · 可放心', '无法核实':'无法核实 · 先别转' };
+const VTIP   = { '失实':'这条是谣言，不要再往群里转了', '部分属实':'有真有假，转的时候要说清楚', '属实':'这条靠谱，可以放心', '无法核实':'没查到可靠依据，先别转' };
+
+function renderReport(data){
+  const r = data.report;
+  const counts = { '失实':0,'部分属实':0,'属实':0,'无法核实':0 };
+  r.claims.forEach(c => counts[c.verdict] = (counts[c.verdict]||0)+1);
+  const order = ['失实','部分属实','无法核实','属实'];
+  const top = order.find(v => counts[v] > 0) || '无法核实';
+
+  let html = `<div class="card">
+    <div class="verdict-hero ${top}">
+      ${ICON[top]||ICON['无法核实']}
+      <div class="vh-word">${top === '属实' ? '查无谣言' : top}</div>
+      <div class="vh-tip">${VTIP[top]}</div>
+    </div>
+    <div class="stat">
+      <div class="s-失实"><b>${counts['失实']}</b><span>失实</span></div>
+      <div class="s-部分属实"><b>${counts['部分属实']}</b><span>部分属实</span></div>
+      <div class="s-属实"><b>${counts['属实']}</b><span>属实</span></div>
+      <div class="s-无法核实"><b>${counts['无法核实']}</b><span>无法核实</span></div>
+    </div>`;
+
+  r.claims.forEach(c => {
+    const srcs = (c.sources||[]).map(s =>
+      `<a class="src" href="${esc(s.url)}" target="_blank" rel="noopener">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.5-1.5"/></svg>
+         <span>${esc(s.title||s.url)}${s.publisher?` <span class="src-pub">（${esc(s.publisher)}）</span>`:''}</span></a>`
+    ).join('');
+    html += `<div class="claim ${c.verdict}">
+      <div class="claim-head">
+        <span class="v-tag ${c.verdict}">${VLABEL[c.verdict]||c.verdict}</span>
+        <span class="conf">把握度：${esc(c.confidence||'—')}</span>
+      </div>
+      <div class="claim-txt">${esc(c.claim)}</div>
+      <div class="explain">${esc(c.explain)}</div>
+      ${srcs ? `<div class="src-list"><div class="src-label">核查依据 / 来源</div>${srcs}</div>` : ''}
+    </div>`;
+  });
+
+  if(r.elder_card){
+    html += `<div class="card-hd" style="margin-top:6px;"><h3><span class="dot"></span>可转回家庭群的辟谣卡</h3></div>
+      <div class="elder">
+        <div class="eh">${esc(r.elder_card.headline)}</div>
+        <div class="eb">${esc(r.elder_card.body)}</div>
+        <div class="ea">${esc(r.elder_card.advice)}</div>
+        <div class="efoot">鉴谣台 · AI 核查 · 健康问题请遵医嘱</div>
+      </div>
+      <button class="btn btn-green" onclick="genCard()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        保存辟谣卡图片（可直接转发群里）
+      </button>`;
+  }
+
+  if(r.notes){ html += `<div class="notes"><b>模型自查：</b>${esc(r.notes)}</div>`; }
+  html += usageHtml(data) + '</div>';
+  document.getElementById('result').innerHTML = html;
+  window.__elder = r.elder_card;
+}
+
+function usageHtml(data){
+  const u = data.usage;
+  if(!u) return '';
+  const inp = u.input_tokens ?? u.prompt_tokens ?? '—';
+  const out = u.output_tokens ?? u.completion_tokens ?? '—';
+  return `<p class="hint" style="justify-content:center;">本次输入 ${inp} / 输出 ${out} tokens · 来源引用 ${(data.citations||[]).length} 条</p>`;
+}
+
+/* 辟谣卡 canvas：先量好每段行数，再从上往下排版，高度自适应，footer 固定在建议框下方 */
+function genCard(){
+  const e = window.__elder; if(!e) return;
+  const cv = document.createElement('canvas');
+  const W = 750, scale = 2;
+  const PAD = 84;                 // 内框左右留白后的内容宽 = W-2*PAD
+  const tmp = document.createElement('canvas').getContext('2d');
+
+  // 测量各段行数
+  tmp.font = 'bold 46px sans-serif'; const headLines = wrapCount(tmp, e.headline, W-PAD*2);
+  tmp.font = '30px sans-serif';      const bodyLines = wrapCount(tmp, e.body, W-PAD*2);
+  tmp.font = 'bold 31px sans-serif'; const advLines  = wrapCount(tmp, e.advice, W-PAD*2-36);
+
+  // 逐段计算垂直位置
+  const headY0 = 210, headLH = 60, bodyLH = 46, advLH = 50;
+  let cursor = headY0;
+  const headTop = cursor; cursor += headLines*headLH + 36;
+  const bodyTop = cursor; cursor += bodyLines*bodyLH + 38;
+  const advBoxX = 84, advBoxW = W-advBoxX*2;
+  const advBoxH = advLines*advLH + 46;
+  const advBoxY = cursor; cursor += advBoxH + 44;
+  const footY = cursor;                       // footer 文字基线位置
+  const H = footY + 42 + 60;                  // 底部留白 + 外框边距
+
+  cv.width = W*scale; cv.height = H*scale;
+  const ctx = cv.getContext('2d');
+  ctx.scale(scale, scale);
+  ctx.textAlign = 'center';
+
+  // 背景与边框
+  ctx.fillStyle = '#FFF3D6'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#7A4E00'; roundRect(ctx, 36, 36, W-72, H-72, 30); ctx.fill();
+  ctx.fillStyle = '#FFFBEE'; roundRect(ctx, 54, 54, W-108, H-108, 24); ctx.fill();
+
+  // 顶部胶囊标
+  ctx.fillStyle = '#0F6B5C'; roundRect(ctx, W/2-165, 92, 330, 54, 27); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 27px sans-serif';
+  ctx.fillText('鉴 谣 台 · 家 庭 核 查', W/2, 128);
+
+  // 结论
+  wrapDraw(ctx, e.headline, W/2, headTop, W-PAD*2, headLH, 'bold 46px sans-serif', '#7A4E00');
+  // 正文
+  wrapDraw(ctx, e.body, W/2, bodyTop, W-PAD*2, bodyLH, '30px sans-serif', '#5C4A1F');
+  // 建议框（虚线）
+  ctx.fillStyle = '#FFF3D6'; roundRect(ctx, advBoxX, advBoxY, advBoxW, advBoxH, 18); ctx.fill();
+  ctx.strokeStyle = '#E3C98A'; ctx.setLineDash([10,7]); ctx.lineWidth = 2;
+  roundRect(ctx, advBoxX, advBoxY, advBoxW, advBoxH, 18); ctx.stroke(); ctx.setLineDash([]);
+  wrapDraw(ctx, e.advice, W/2, advBoxY+40, advBoxW-36, advLH, 'bold 31px sans-serif', '#9A5B00');
+
+  // 底部声明（固定在建议框下方，不再用写死坐标）
+  ctx.fillStyle = '#B09360'; ctx.font = '24px sans-serif';
+  ctx.fillText('鉴谣台 · 由 AI 核查，健康问题请遵医嘱', W/2, footY);
+
+  const url = cv.toDataURL('image/png');
+  showCardOverlay(url);
+}
+
+/* 页面内遮罩展示辟谣卡（不用 window.open，兼容内嵌 webview / 微信） */
+function showCardOverlay(url){
+  let ov = document.getElementById('cardOverlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'cardOverlay';
+    ov.className = 'card-overlay';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if(e.target === ov || e.target.dataset.close) ov.classList.remove('show'); });
+  }
+  ov.innerHTML = `
+    <div class="co-panel">
+      <button class="co-close" data-close aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <img src="${url}" alt="辟谣卡">
+      <p class="co-tip">手机长按图片可保存；电脑点下方按钮下载</p>
+      <a class="co-download" href="${url}" download="鉴谣台-辟谣卡.png">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        下载辟谣卡图片
+      </a>
+    </div>`;
+  requestAnimationFrame(() => ov.classList.add('show'));
+}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapCount(ctx, text, maxW){ let line='', n=1; for(const ch of text){ if(ctx.measureText(line+ch).width > maxW){ n++; line=ch; } else line+=ch; } return n; }
+function wrapDraw(ctx, text, x, y, maxW, lh, font, color){
+  ctx.font=font; ctx.fillStyle=color; ctx.textAlign='center';
+  let line=''; const lines=[];
+  for(const ch of text){ if(ctx.measureText(line+ch).width > maxW){ lines.push(line); line=ch; } else line+=ch; }
+  lines.push(line);
+  lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh));
+  return y + lines.length*lh;
+}
+
+/* 历史：存完整报告，可点开回看详情、再次保存辟谣卡 */
+function verdictTop(r){
+  const counts = { '失实':0,'部分属实':0,'属实':0,'无法核实':0 };
+  r.claims.forEach(c => counts[c.verdict] = (counts[c.verdict]||0)+1);
+  return ['失实','部分属实','无法核实','属实'].find(v => counts[v] > 0) || '无法核实';
+}
+function saveHist(data, input){
+  const list = JSON.parse(localStorage.getItem('jyt_hist')||'[]');
+  const r = data.report;
+  list.unshift({
+    t: new Date().toLocaleString('zh-CN'),
+    input: (input||'').slice(0,60),
+    n: r.claims.length,
+    top: verdictTop(r),
+    headline: r.elder_card?.headline||'',
+    report: r,
+    usage: data.usage || null,
+    citations: data.citations || []
+  });
+  try{
+    localStorage.setItem('jyt_hist', JSON.stringify(list.slice(0,20)));
+  }catch{
+    // 空间不够时只存摘要
+    list.forEach(h => { delete h.report; delete h.usage; delete h.citations; });
+    localStorage.setItem('jyt_hist', JSON.stringify(list.slice(0,20)));
+  }
+  renderHist();
+}
+function openHist(i){
+  const list = JSON.parse(localStorage.getItem('jyt_hist')||'[]');
+  const h = list[i]; if(!h) return;
+  if(!h.report){ toast('这条记录详情未保存，请重新核查', 'err'); return; }
+  renderReport({ report: h.report, usage: h.usage, citations: h.citations });
+  window.scrollTo({ top: document.getElementById('result').offsetTop - 20, behavior:'smooth' });
+}
+function exportHist(){
+  const list = JSON.parse(localStorage.getItem('jyt_hist')||'[]');
+  if(!list.length){ toast('还没有核查记录可导出', 'err'); return; }
+  const payload = { app:'jianyaotai', exportedAt: new Date().toISOString(), count: list.length, records: list };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const name = `鉴谣台-核查记录-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+function importHist(ev){
+  const f = ev.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      const incoming = Array.isArray(data) ? data : data.records;
+      if(!Array.isArray(incoming)) throw new Error('文件格式不对');
+      const cur = JSON.parse(localStorage.getItem('jyt_hist')||'[]');
+      // 按时间+输入去重合并，新导入在前
+      const seen = new Set(cur.map(h => h.t + '|' + h.input));
+      let added = 0;
+      incoming.forEach(h => {
+        if(h && h.report && !seen.has(h.t + '|' + h.input)){ cur.unshift(h); seen.add(h.t + '|' + h.input); added++; }
+      });
+      cur.sort((a,b) => new Date(b.t) - new Date(a.t));
+      localStorage.setItem('jyt_hist', JSON.stringify(cur.slice(0,20)));
+      renderHist();
+      toast(added > 0 ? `成功导入 ${added} 条记录` : '没有新记录（已存在或文件无有效记录）', added > 0 ? 'ok' : 'err');
+    }catch(err){ toast('导入失败：' + (err.message || '文件不是有效记录'), 'err'); }
+    ev.target.value = '';
+  };
+  reader.readAsText(f);
+}
+function renderHist(){
+  const list = JSON.parse(localStorage.getItem('jyt_hist')||'[]');
+  const box = document.getElementById('hist');
+  const exp = document.getElementById('expBtn');
+  if(exp) exp.disabled = !list.length;
+  if(!list.length){ box.innerHTML = '<div class="hist-empty">还没有核查记录</div>'; return; }
+  box.innerHTML = list.map((h,i) =>
+    `<div class="hist-item${h.report?' clickable':''}" ${h.report?`onclick="openHist(${i})" role="button" tabindex="0"`:''}>
+       <div class="h-row">
+         <span class="h-dot ${esc(h.top||'无法核实')}"></span>
+         <div class="h-t">${esc(h.headline||'（无结论卡）')}</div>
+         ${h.report ? '<svg class="h-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' : ''}
+       </div>
+       <div class="h-m">${esc(h.t)} · 核查 ${h.n} 条说法 · 「${esc(h.input||'截图核查')}」</div>
+       ${h.report ? '<div class="h-open">点开查看详情 · 可再次保存辟谣卡</div>' : ''}
+     </div>`
+  ).join('');
+}
+
+function esc(s){ return String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+refreshCfgPill();
+renderHist();
+</script>
+</body>
+</html>
