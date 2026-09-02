@@ -20,6 +20,34 @@
 - **核查记录**：本地保存历史，谣言库随用随厚
 - **无障碍**：大字号（≥15px）、54px 点击目标、四色语义化、`prefers-reduced-motion` 支持
 
+## 应用截图
+
+### 首页
+
+![鉴谣台首页](screenshots/homepage.png)
+
+### 模型设置
+
+![模型设置：多厂商 + Agent Plan 专属 endpoint](screenshots/model-config.jpg)
+
+### 核查报告
+
+![核查报告：四档判定 + 把握度 + 权威来源](screenshots/case-report.jpg)
+
+### 本地预扫
+
+![本地预扫：输入即命中已知谣言模式](screenshots/prescan.jpg)
+
+### submit_report 工具 schema 源码
+
+![submit_report 工具真实源码](screenshots/code-schema.jpg)
+
+### 两轮真实调用数据
+
+![本地预扫回归 + 深度核查 usage](screenshots/table-data.jpg)
+
+测试过程中 55 张用例截图存档于 [`screenshots/cases/`](screenshots/cases/)，覆盖多说法任务、流程编排、噪声过滤、来源真实性、无法核实诚实性、实时检索、复杂流程多错误分类等场景。
+
 ## 快速开始
 
 ```bash
